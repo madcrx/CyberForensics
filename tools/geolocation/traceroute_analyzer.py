@@ -46,23 +46,34 @@ class TracerouteAnalyzer:
         analyzed_hops = []
         for hop_num, hop_data in enumerate(hops, 1):
             if hop_data['ip']:
-                analysis = ip_intel.analyze_ip(hop_data['ip'])
+                try:
+                    analysis = ip_intel.analyze_ip(hop_data['ip'])
 
-                analyzed_hop = {
-                    'hop_number': hop_num,
-                    'ip_address': hop_data['ip'],
-                    'hostname': hop_data.get('hostname'),
-                    'rtt': hop_data.get('rtt'),  # Round-trip time
-                    'geolocation': analysis.get('geolocation', {}),
-                    'isp_info': analysis.get('isp_info', {}),
-                    'coordinates': {
-                        'latitude': analysis['geolocation'].get('latitude', 0),
-                        'longitude': analysis['geolocation'].get('longitude', 0),
+                    # Skip if analysis returned an error
+                    if 'error' in analysis:
+                        logger.warning(f"Skipping hop {hop_num} due to analysis error: {analysis['error']}")
+                        continue
+
+                    geolocation = analysis.get('geolocation', {})
+
+                    analyzed_hop = {
+                        'hop_number': hop_num,
+                        'ip_address': hop_data['ip'],
+                        'hostname': hop_data.get('hostname'),
+                        'rtt': hop_data.get('rtt'),  # Round-trip time
+                        'geolocation': geolocation,
+                        'isp_info': analysis.get('isp_info', {}),
+                        'coordinates': {
+                            'latitude': geolocation.get('latitude', 0),
+                            'longitude': geolocation.get('longitude', 0),
+                        }
                     }
-                }
 
-                analyzed_hops.append(analyzed_hop)
-                self.hop_database[hop_data['ip']] = analyzed_hop
+                    analyzed_hops.append(analyzed_hop)
+                    self.hop_database[hop_data['ip']] = analyzed_hop
+                except Exception as e:
+                    logger.error(f"Error analyzing hop {hop_num} ({hop_data['ip']}): {e}")
+                    continue
 
         route_info = {
             'destination': destination,
