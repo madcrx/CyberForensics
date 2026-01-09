@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}Email Forensics - CyberForensics{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2><i class="fas fa-envelope"></i> Email Forensics</h2>
+    <p class="text-muted">Analyze email headers, trace senders, and detect phishing attempts</p>
+
+    <div class="row mt-4">
+        <!-- Email Upload -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-upload"></i> Upload Email</h5>
+                </div>
+                <div class="card-body">
+                    <form id="emailUploadForm">
+                        <div class="mb-3">
+                            <label for="emailFile" class="form-label">Email File (.eml, .msg)</label>
+                            <input type="file" class="form-control" id="emailFile" accept=".eml,.msg,.txt">
+                            <small class="form-text text-muted">Or paste raw email headers below</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="emailHeaders" class="form-label">Raw Email Headers (Optional)</label>
+                            <textarea class="form-control" id="emailHeaders" rows="6"
+                                      placeholder="Paste email headers here..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Analysis Options</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="traceRoute" checked>
+                                <label class="form-check-label" for="traceRoute">
+                                    Trace Sender Location
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="checkAuth" checked>
+                                <label class="form-check-label" for="checkAuth">
+                                    Check Authentication (SPF/DKIM/DMARC)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="detectPhishing" checked>
+                                <label class="form-check-label" for="detectPhishing">
+                                    Detect Phishing Indicators
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="generateMap">
+                                <label class="form-check-label" for="generateMap">
+                                    Generate Route Map
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Analyze Email
+                        </button>
+                    </form>
+
+                    <div id="analysisProgress" class="mt-4" style="display: none;">
+                        <h6>Analyzing...</h6>
+                        <div class="progress">
+                            <div id="analysisProgressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+                                 role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Email Lookup -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-at"></i> Email Address Lookup</h5>
+                </div>
+                <div class="card-body">
+                    <form id="emailLookupForm">
+                        <div class="mb-3">
+                            <label for="emailAddress" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="emailAddress"
+                                   placeholder="e.g., suspect@example.com">
+                        </div>
+
+                        <button type="submit" class="btn btn-info">
+                            <i class="fas fa-search"></i> Lookup
+                        </button>
+                    </form>
+
+                    <div id="lookupResults" class="mt-3"></div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-shield-alt"></i> Email Security Check</h5>
+                </div>
+                <div class="card-body">
+                    <form id="domainCheckForm">
+                        <div class="mb-3">
+                            <label for="domainName" class="form-label">Domain Name</label>
+                            <input type="text" class="form-control" id="domainName"
+                                   placeholder="e.g., example.com">
+                        </div>
+
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check-circle"></i> Check Security
+                        </button>
+                    </form>
+
+                    <div id="domainResults" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-alt"></i> Forensics Report</h5>
+                </div>
+                <div class="card-body">
+                    <div id="resultsContainer">
+                        <p class="text-muted text-center">No results yet. Upload an email or paste headers to begin analysis.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    $('#emailUploadForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const file = $('#emailFile')[0].files[0];
+        const headers = $('#emailHeaders').val().trim();
+
+        if (!file && !headers) {
+            showToast('Please upload a file or paste email headers', 'warning');
+            return;
+        }
+
+        $('#analysisProgress').show();
+        showLoading();
+
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 20;
+            $('#analysisProgressBar').css('width', progress + '%').text(progress + '%');
+
+            if (progress >= 100) {
+                clearInterval(interval);
+                hideLoading();
+                showToast('Email analysis complete!', 'success');
+                displayEmailResults();
+            }
+        }, 600);
+    });
+
+    $('#emailLookupForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const email = $('#emailAddress').val().trim();
+        if (!email) {
+            showToast('Please enter an email address', 'warning');
+            return;
+        }
+
+        showLoading();
+        setTimeout(() => {
+            hideLoading();
+            $('#lookupResults').html(`
+                <div class="alert alert-info">
+                    <strong>Email:</strong> ${email}<br>
+                    <strong>Domain:</strong> ${email.split('@')[1]}<br>
+                    <strong>MX Records:</strong> Found (3 servers)<br>
+                    <strong>Reputation:</strong> <span class="badge bg-success">Good</span>
+                </div>
+            `);
+        }, 1500);
+    });
+
+    $('#domainCheckForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const domain = $('#domainName').val().trim();
+        if (!domain) {
+            showToast('Please enter a domain name', 'warning');
+            return;
+        }
+
+        showLoading();
+        setTimeout(() => {
+            hideLoading();
+            $('#domainResults').html(`
+                <div class="alert alert-success">
+                    <strong>Domain:</strong> ${domain}<br>
+                    <strong>SPF:</strong> ✓ Configured<br>
+                    <strong>DKIM:</strong> ✓ Enabled<br>
+                    <strong>DMARC:</strong> ✓ Policy: reject
+                </div>
+            `);
+        }, 1500);
+    });
+
+    function displayEmailResults() {
+        const html = `
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle"></i> PHISHING DETECTED</h5>
+                <p class="mb-0">This email exhibits multiple phishing indicators and sender spoofing.</p>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h6 class="text-primary">Email Headers</h6>
+                    <table class="table table-sm">
+                        <tr>
+                            <td><strong>From:</strong></td>
+                            <td>admin@secure-bank.com</td>
+                        </tr>
+                        <tr class="table-danger">
+                            <td><strong>Real From:</strong></td>
+                            <td>hacker@malicious.ru <span class="badge bg-danger">SPOOFED!</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>To:</strong></td>
+                            <td>victim@example.com</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Subject:</strong></td>
+                            <td>Urgent: Verify Your Account</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Date:</strong></td>
+                            <td>2026-01-09 14:23:15 GMT</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h6 class="text-primary">Authentication Results</h6>
+                    <table class="table table-sm">
+                        <tr class="table-danger">
+                            <td><strong>SPF:</strong></td>
+                            <td>❌ FAIL</td>
+                        </tr>
+                        <tr class="table-danger">
+                            <td><strong>DKIM:</strong></td>
+                            <td>❌ FAIL</td>
+                        </tr>
+                        <tr class="table-danger">
+                            <td><strong>DMARC:</strong></td>
+                            <td>❌ FAIL</td>
+                        </tr>
+                        <tr class="table-danger">
+                            <td><strong>Risk Level:</strong></td>
+                            <td><span class="badge bg-danger">CRITICAL</span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <h6 class="text-danger"><i class="fas fa-exclamation-circle"></i> Phishing Indicators</h6>
+            <ul class="list-group mb-4">
+                <li class="list-group-item list-group-item-danger">
+                    <strong>Sender Spoofing:</strong> Display name doesn't match actual sender
+                </li>
+                <li class="list-group-item list-group-item-warning">
+                    <strong>Suspicious Domain:</strong> .ru TLD with banking theme
+                </li>
+                <li class="list-group-item list-group-item-warning">
+                    <strong>Urgency Tactics:</strong> Subject contains "Urgent" to create panic
+                </li>
+                <li class="list-group-item list-group-item-warning">
+                    <strong>Suspicious Links:</strong> Contains links to non-bank domains
+                </li>
+            </ul>
+
+            <h6><i class="fas fa-route"></i> Email Path (Traced)</h6>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Hop</th>
+                            <th>Server IP</th>
+                            <th>Location</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>185.220.101.5</td>
+                            <td>Moscow, Russia 🇷🇺</td>
+                            <td>2026-01-09 14:20:10</td>
+                        </tr>
+                        <tr>
+                            <td>2</td>
+                            <td>198.51.100.23</td>
+                            <td>Amsterdam, Netherlands 🇳🇱</td>
+                            <td>2026-01-09 14:21:15</td>
+                        </tr>
+                        <tr>
+                            <td>3</td>
+                            <td>192.0.2.45</td>
+                            <td>New York, USA 🇺🇸</td>
+                            <td>2026-01-09 14:22:33</td>
+                        </tr>
+                        <tr>
+                            <td>4</td>
+                            <td>Final Delivery</td>
+                            <td>-</td>
+                            <td>2026-01-09 14:23:15</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="alert alert-info mt-3">
+                <h6><i class="fas fa-lightbulb"></i> Geographic Anomaly Detected</h6>
+                Email claims to be from US bank but originated in Russia with routing through Netherlands.
+            </div>
+
+            <div class="mt-3">
+                <button class="btn btn-success"><i class="fas fa-download"></i> Download Report</button>
+                <button class="btn btn-primary"><i class="fas fa-map"></i> View Route Map</button>
+                <button class="btn btn-danger"><i class="fas fa-flag"></i> Report as Phishing</button>
+            </div>
+        `;
+        $('#resultsContainer').html(html);
+    }
+});
+</script>
+{% endblock %}

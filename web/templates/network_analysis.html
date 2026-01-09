@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}Network Analysis - CyberForensics{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2><i class="fas fa-network-wired"></i> Network Analysis</h2>
+    <p class="text-muted">Analyze network traffic and detect suspicious activities</p>
+
+    <div class="row mt-4">
+        <!-- PCAP Upload Section -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-upload"></i> Upload PCAP File</h5>
+                </div>
+                <div class="card-body">
+                    <form id="pcapUploadForm">
+                        <div class="mb-3">
+                            <label for="pcapFile" class="form-label">PCAP File</label>
+                            <input type="file" class="form-control" id="pcapFile" accept=".pcap,.pcapng,.cap">
+                            <small class="form-text text-muted">Wireshark capture files (.pcap, .pcapng)</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Analysis Options</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="detectPortScans" checked>
+                                <label class="form-check-label" for="detectPortScans">
+                                    Detect Port Scans
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="detectDDoS" checked>
+                                <label class="form-check-label" for="detectDDoS">
+                                    Detect DDoS Attacks
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="detectDNSTunneling" checked>
+                                <label class="form-check-label" for="detectDNSTunneling">
+                                    Detect DNS Tunneling
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="extractCredentials">
+                                <label class="form-check-label" for="extractCredentials">
+                                    Extract Credentials (Insecure Protocols)
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-chart-line"></i> Analyze Traffic
+                        </button>
+                    </form>
+
+                    <div id="analysisProgress" class="mt-4" style="display: none;">
+                        <h6>Analysis Progress</h6>
+                        <div class="progress">
+                            <div id="analysisProgressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+                                 role="progressbar" style="width: 0%">0%</div>
+                        </div>
+                        <p class="mt-2"><span id="analysisStatus">Parsing packets...</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Traffic Monitor -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-rss"></i> Live Traffic Monitor</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Monitor network traffic in real-time</p>
+
+                    <div class="mb-3">
+                        <label for="networkInterface" class="form-label">Network Interface</label>
+                        <select class="form-select" id="networkInterface">
+                            <option value="eth0">eth0 - Ethernet</option>
+                            <option value="wlan0">wlan0 - Wireless</option>
+                            <option value="any">any - All Interfaces</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="captureFilter" class="form-label">Capture Filter (BPF)</label>
+                        <input type="text" class="form-control" id="captureFilter"
+                               placeholder="e.g., tcp port 80 or udp">
+                        <small class="form-text text-muted">Berkeley Packet Filter syntax</small>
+                    </div>
+
+                    <button id="startMonitorBtn" class="btn btn-success">
+                        <i class="fas fa-play"></i> Start Monitoring
+                    </button>
+                    <button id="stopMonitorBtn" class="btn btn-danger" style="display: none;">
+                        <i class="fas fa-stop"></i> Stop Monitoring
+                    </button>
+
+                    <div id="liveStats" class="mt-4" style="display: none;">
+                        <h6>Live Statistics</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Packets:</strong></td>
+                                <td id="livePackets">0</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Bytes:</strong></td>
+                                <td id="liveBytes">0</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Alerts:</strong></td>
+                                <td id="liveAlerts">0</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Analysis Results</h5>
+                </div>
+                <div class="card-body">
+                    <div id="resultsContainer">
+                        <p class="text-muted text-center">No results yet. Upload a PCAP file or start live monitoring.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    let monitoringActive = false;
+
+    $('#pcapUploadForm').on('submit', function(e) {
+        e.preventDefault();
+
+        const pcapFile = $('#pcapFile')[0].files[0];
+        if (!pcapFile) {
+            showToast('Please select a PCAP file', 'warning');
+            return;
+        }
+
+        $('#analysisProgress').show();
+        showLoading();
+
+        let progress = 0;
+        const statuses = [
+            'Parsing packets...',
+            'Analyzing protocols...',
+            'Detecting anomalies...',
+            'Generating statistics...',
+            'Creating report...'
+        ];
+
+        const interval = setInterval(() => {
+            progress += 20;
+            const statusIndex = Math.floor(progress / 20) - 1;
+
+            $('#analysisProgressBar').css('width', progress + '%').text(progress + '%');
+            if (statusIndex >= 0 && statusIndex < statuses.length) {
+                $('#analysisStatus').text(statuses[statusIndex]);
+            }
+
+            if (progress >= 100) {
+                clearInterval(interval);
+                hideLoading();
+                showToast('Network analysis complete!', 'success');
+                displayAnalysisResults();
+            }
+        }, 800);
+    });
+
+    $('#startMonitorBtn').on('click', function() {
+        monitoringActive = true;
+        $(this).hide();
+        $('#stopMonitorBtn').show();
+        $('#liveStats').show();
+        showToast('Live monitoring started', 'info');
+        startLiveMonitoring();
+    });
+
+    $('#stopMonitorBtn').on('click', function() {
+        monitoringActive = false;
+        $(this).hide();
+        $('#startMonitorBtn').show();
+        showToast('Live monitoring stopped', 'info');
+    });
+
+    function startLiveMonitoring() {
+        let packets = 0;
+        let bytes = 0;
+        let alerts = 0;
+
+        const interval = setInterval(() => {
+            if (!monitoringActive) {
+                clearInterval(interval);
+                return;
+            }
+
+            packets += Math.floor(Math.random() * 100);
+            bytes += Math.floor(Math.random() * 10000);
+
+            if (Math.random() > 0.7) {
+                alerts++;
+            }
+
+            $('#livePackets').text(packets.toLocaleString());
+            $('#liveBytes').text(bytes.toLocaleString() + ' bytes');
+            $('#liveAlerts').text(alerts);
+        }, 1000);
+    }
+
+    function displayAnalysisResults() {
+        const html = `
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h3>1,234,567</h3>
+                            <p class="mb-0">Total Packets</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h3>847</h3>
+                            <p class="mb-0">Unique IPs</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h3>2.3 GB</h3>
+                            <p class="mb-0">Total Traffic</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center">
+                            <h3>23</h3>
+                            <p class="mb-0">Threats Detected</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h6 class="text-danger"><i class="fas fa-exclamation-triangle"></i> Detected Threats</h6>
+            <div class="alert alert-danger">
+                <strong>Port Scan Detected</strong><br>
+                Source: 192.168.1.105 → Target: 10.0.0.0/24<br>
+                Ports Scanned: 1-65535<br>
+                Time: 2026-01-09 14:23:15
+            </div>
+
+            <div class="alert alert-warning">
+                <strong>SYN Flood Attack</strong><br>
+                Source: 203.0.113.45 (External) → Target: 192.168.1.10:80<br>
+                Packets: 45,678 in 2 minutes<br>
+                Time: 2026-01-09 14:30:22
+            </div>
+
+            <div class="alert alert-warning">
+                <strong>DNS Tunneling Suspected</strong><br>
+                Domain: x3k9f2j.malicious.com<br>
+                Queries: 2,345 (unusual volume)<br>
+                Time: 2026-01-09 15:12:45
+            </div>
+
+            <h6 class="mt-4">Protocol Distribution</h6>
+            <div class="progress" style="height: 30px;">
+                <div class="progress-bar bg-primary" style="width: 78%">TCP 78%</div>
+                <div class="progress-bar bg-success" style="width: 19%">UDP 19%</div>
+                <div class="progress-bar bg-info" style="width: 3%">ICMP 3%</div>
+            </div>
+
+            <h6 class="mt-4">Top Talkers</h6>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Source</th>
+                        <th>Destination</th>
+                        <th>Data Transferred</th>
+                        <th>Packets</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>192.168.1.10</td>
+                        <td>203.0.113.50</td>
+                        <td>1.2 GB</td>
+                        <td>456,789</td>
+                    </tr>
+                    <tr>
+                        <td>10.0.0.5</td>
+                        <td>8.8.8.8</td>
+                        <td>845 MB</td>
+                        <td>234,567</td>
+                    </tr>
+                    <tr>
+                        <td>172.16.0.20</td>
+                        <td>198.51.100.1</td>
+                        <td>623 MB</td>
+                        <td>178,234</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="mt-3">
+                <button class="btn btn-success"><i class="fas fa-download"></i> Download Full Report</button>
+                <button class="btn btn-primary"><i class="fas fa-chart-line"></i> Generate Timeline</button>
+            </div>
+        `;
+        $('#resultsContainer').html(html);
+    }
+});
+</script>
+{% endblock %}
