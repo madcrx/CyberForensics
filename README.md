@@ -45,6 +45,17 @@ A comprehensive Digital Forensics and Cybersecurity Investigation Suite for anal
 
 ## 🚀 Quick Start with Docker
 
+### 📘 **Windows Users: See [DEPLOYMENT_WINDOWS.md](DEPLOYMENT_WINDOWS.md) for Complete Step-by-Step Guide**
+
+**Ultra-Quick Start:**
+1. Install [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
+2. Double-click `deploy_windows.bat` in project folder
+3. Access web portal at http://localhost:5000
+
+**Or read:** [QUICK_START_WINDOWS.md](QUICK_START_WINDOWS.md) for 2-step guide
+
+---
+
 ### Prerequisites
 - Docker Desktop for Windows
 - At least 4GB RAM available for containers
@@ -67,6 +78,8 @@ docker-compose build
 ```bash
 docker-compose up -d
 ```
+
+**Windows Users:** Simply run `deploy_windows.bat` instead of steps 2-3!
 
 ### 🌐 Web Portal (Recommended!)
 
