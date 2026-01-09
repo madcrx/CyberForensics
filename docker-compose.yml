@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  forensics:
+    build: .
+    image: cyberforensics:latest
+    container_name: cyberforensics_toolkit
+    hostname: forensics-lab
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./data:/data
+      - ./tools:/app/tools
+      - ./cli:/app/cli
+      - evidence_data:/data/evidence
+      - reports_data:/data/reports
+    networks:
+      - forensics_net
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TZ=UTC
+    command: /bin/bash
+
+  # Optional: Web interface for reports
+  web_interface:
+    image: nginx:alpine
+    container_name: forensics_web
+    ports:
+      - "8080:80"
+    volumes:
+      - ./data/reports:/usr/share/nginx/html/reports:ro
+      - ./docs:/usr/share/nginx/html/docs:ro
+    networks:
+      - forensics_net
+
+networks:
+  forensics_net:
+    driver: bridge
+
+volumes:
+  evidence_data:
+  reports_data:
