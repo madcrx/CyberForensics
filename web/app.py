@@ -170,11 +170,36 @@ def api_traceroute():
         analyzer = TracerouteAnalyzer()
         hops = analyzer.trace_route(destination)
 
-        return jsonify({'hops': hops, 'total_hops': len(hops)})
+        # Ensure hops is a list and properly serializable
+        if not isinstance(hops, list):
+            app.logger.error(f"Traceroute returned non-list: {type(hops)}")
+            return jsonify({'error': 'Internal error: invalid response format'}), 500
+
+        # Convert to JSON-safe format
+        safe_hops = []
+        for hop in hops:
+            try:
+                safe_hop = {
+                    'hop_number': hop.get('hop_number', 0),
+                    'ip_address': hop.get('ip_address', 'Unknown'),
+                    'hostname': hop.get('hostname'),
+                    'rtt': hop.get('rtt'),
+                    'geolocation': hop.get('geolocation', {}),
+                    'isp_info': hop.get('isp_info', {}),
+                    'coordinates': hop.get('coordinates', {'latitude': 0, 'longitude': 0})
+                }
+                safe_hops.append(safe_hop)
+            except Exception as hop_error:
+                app.logger.warning(f"Skipping malformed hop: {hop_error}")
+                continue
+
+        return jsonify({'hops': safe_hops, 'total_hops': len(safe_hops)})
 
     except Exception as e:
+        import traceback
         app.logger.error(f"Traceroute error: {e}")
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(traceback.format_exc())
+        return jsonify({'error': f'Traceroute failed: {str(e)}'}), 500
 
 
 # ==================== PASSWORD RECOVERY APIs ====================
