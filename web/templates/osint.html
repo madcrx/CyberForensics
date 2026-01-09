@@ -293,10 +293,19 @@ $(document).ready(function() {
             </div>
 
             <div class="mt-3">
-                <button class="btn btn-success" id="downloadReportBtn"><i class="fas fa-download"></i> Download Full Report</button>
-                <button class="btn btn-primary" id="viewNetworkGraphBtn"><i class="fas fa-project-diagram"></i> View Network Graph</button>
-                <button class="btn btn-info" id="viewTimelineBtn"><i class="fas fa-clock"></i> View Timeline</button>
+                <button class="btn btn-success" id="downloadReportBtn">
+                    <i class="fas fa-download"></i> Download Full Report (HTML)
+                </button>
+                <button class="btn btn-outline-primary" id="viewNetworkGraphBtn" title="Feature coming soon">
+                    <i class="fas fa-project-diagram"></i> View Network Graph <span class="badge bg-secondary">Coming Soon</span>
+                </button>
+                <button class="btn btn-outline-info" id="viewTimelineBtn" title="Feature coming soon">
+                    <i class="fas fa-clock"></i> View Timeline <span class="badge bg-secondary">Coming Soon</span>
+                </button>
             </div>
+            <p class="text-muted mt-2 small">
+                <i class="fas fa-info-circle"></i> <strong>Tip:</strong> Download the full report for complete analysis with all collected intelligence.
+            </p>
         `;
         $('#resultsContainer').html(html);
 
@@ -312,31 +321,35 @@ $(document).ready(function() {
 
         // View Network Graph button
         $('#viewNetworkGraphBtn').on('click', function() {
-            showToast('Network graph visualization coming soon!', 'info');
+            showToast('⚙️ Network Graph Feature: Advanced visualization coming in future update. Download the full report for complete analysis!', 'info');
             // In future: window.open('/osint-network-graph?username=' + username, '_blank');
         });
 
         // View Timeline button
         $('#viewTimelineBtn').on('click', function() {
-            showToast('Timeline visualization coming soon!', 'info');
+            showToast('⚙️ Timeline Feature: Interactive timeline coming in future update. Download the full report for complete analysis!', 'info');
             // In future: window.open('/osint-timeline?username=' + username, '_blank');
         });
 
         // Attach handlers to individual profile buttons
-        $('button:contains("View Timeline")').on('click', function() {
-            showToast('Platform-specific timeline coming soon!', 'info');
+        $('button:contains("View Timeline")').on('click', function(e) {
+            e.preventDefault();
+            showToast('⚙️ Platform Timeline: Feature planned for future release', 'info');
         });
 
-        $('button:contains("View Connections")').on('click', function() {
-            showToast('LinkedIn connections analysis coming soon!', 'info');
+        $('button:contains("View Connections")').on('click', function(e) {
+            e.preventDefault();
+            showToast('⚙️ LinkedIn Connections: Feature planned for future release', 'info');
         });
 
-        $('button:contains("View Projects")').on('click', function() {
-            showToast('GitHub projects analysis coming soon!', 'info');
+        $('button:contains("View Projects")').on('click', function(e) {
+            e.preventDefault();
+            showToast('⚙️ GitHub Projects: Feature planned for future release', 'info');
         });
 
-        $('button:contains("View Photos")').on('click', function() {
-            showToast('Instagram photo analysis coming soon!', 'info');
+        $('button:contains("View Photos")').on('click', function(e) {
+            e.preventDefault();
+            showToast('⚙️ Instagram Photos: Feature planned for future release', 'info');
         });
     }
 
