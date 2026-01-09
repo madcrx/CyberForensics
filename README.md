@@ -68,12 +68,39 @@ docker-compose build
 docker-compose up -d
 ```
 
+### 🌐 Web Portal (Recommended!)
+
+**Access the professional browser interface:**
+
+```bash
+# Open in your browser:
+http://localhost:5000
+```
+
+**Features:**
+- 🎯 **Interactive Dashboard** with all 8 tools
+- 🗺️ **Interactive World Maps** for IP tracking
+- 📊 **Real-time Visualizations**
+- 🔍 **Quick Actions** for instant analysis
+- 📈 **Statistics & Reports**
+
+### 💻 Command Line Interface
+
 4. Access the CLI:
 ```bash
 docker-compose exec forensics python cli/main.py --help
 ```
 
 ## 📖 Usage Examples
+
+### Web Portal (Easy!)
+
+1. Open browser to http://localhost:5000
+2. Click any tool card on the dashboard
+3. Enter your data and click "Analyze"
+4. View results instantly with visual maps
+
+### Command Line Interface
 
 ### File Recovery
 ```bash

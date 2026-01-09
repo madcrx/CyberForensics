@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - CyberForensics Toolkit{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3">
+                <i class="fas fa-tachometer-alt"></i> Forensics Dashboard
+            </h2>
+            <p class="text-muted">Professional Digital Forensics & Investigation Suite</p>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-tools fa-3x text-primary"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0">{{ stats.total_tools }}</h3>
+                            <p class="text-muted mb-0">Forensics Tools</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-file-alt fa-3x text-success"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0">{{ stats.reports_generated }}</h3>
+                            <p class="text-muted mb-0">Reports Generated</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-check-circle fa-3x text-success"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h3 class="mb-0">{{ stats.tools_available }}</h3>
+                            <p class="text-muted mb-0">Tools Online</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tools Grid -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3">
+                <i class="fas fa-toolbox"></i> Available Tools
+            </h4>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- File Forensics -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card tool-card" onclick="window.location.href='/file-forensics'">
+                <div class="card-body text-center">
+                    <div class="tool-icon">
+                        <i class="fas fa-hdd"></i>
+                    </div>
+                    <h5 class="card-title">File Forensics</h5>
+                    <p class="card-text text-muted">
+                        File recovery, metadata analysis, and timeline generation
+                    </p>
+                    <span class="badge bg-success">Active</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Analysis -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card tool-card" onclick="window.location.href='/network-analysis'">
+                <div class="card-body text-center">
+                    <div class="tool-icon">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <h5 class="card-title">Network Analysis</h5>
+                    <p class="card-text text-muted">
+                        PCAP analysis, traffic monitoring, intrusion detection
+                    </p>
+                    <span class="badge bg-success">Active</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Malware Analysis -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card tool-card" onclick="window.location.href='/malware-analysis'">
+                <div class="card-body text-center">
+                    <div class="tool-icon">
+                        <i class="fas fa-virus"></i>
+                    </div>
+                    <h5 class="card-title">Malware Analysis</h5>
+                    <p class="card-text text-muted">
+                        Static analysis, signature detection, threat assessment
+                    </p>
+                    <span class="badge bg-success">Active</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Recovery -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card tool-card" onclick="window.location.href='/password-recovery'">
+                <div class="card-body text-center">
+                    <div class="tool-icon">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <h5 class="card-title">Password Recovery</h5>
+                    <p class="card-text text-muted">
+                        Hash cracking, dictionary attacks, password analysis
+                    </p>
+                    <span class="badge bg-success">Active</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- OSINT -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card tool-card" onclick="window.location.href='/osint'">
+                <div class="card-body text-center">
+                    <div class="tool-icon">
+                        <i class="fas fa-user-secret"></i>
+                    </div>
+                    <h5 class="card-title">OSINT</h5>
+                    <p class="card-text text-muted">
+                        Social media intelligence, profile analysis, tracking
+                    </p>
+                    <span class="badge bg-success">Active</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Geolocation -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card tool-card" onclick="window.location.href='/geolocation'">
+                <div class="card-body text-center">
+                    <div class="tool-icon">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <h5 class="card-title">IP Geolocation</h5>
+                    <p class="card-text text-muted">
+                        IP tracking, traceroute, interactive world maps
+                    </p>
+                    <span class="badge bg-success">Active</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Forensics -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card tool-card" onclick="window.location.href='/email-forensics'">
+                <div class="card-body text-center">
+                    <div class="tool-icon">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </div>
+                    <h5 class="card-title">Email Forensics</h5>
+                    <p class="card-text text-muted">
+                        Header analysis, sender tracking, spoofing detection
+                    </p>
+                    <span class="badge bg-success">Active</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attribution Engine -->
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card tool-card" onclick="window.location.href='/attribution'">
+                <div class="card-body text-center">
+                    <div class="tool-icon">
+                        <i class="fas fa-fingerprint"></i>
+                    </div>
+                    <h5 class="card-title">Attribution Engine</h5>
+                    <p class="card-text text-muted">
+                        Attacker identification, evidence correlation
+                    </p>
+                    <span class="badge bg-success">Active</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h4 class="mb-3">
+                <i class="fas fa-bolt"></i> Quick Actions
+            </h4>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-globe"></i> Quick IP Lookup
+                    </h5>
+                    <form id="quickIPForm">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="quickIP"
+                                   placeholder="Enter IP address (e.g., 8.8.8.8)" required>
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i> Analyze
+                            </button>
+                        </div>
+                    </form>
+                    <div id="ipResult" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-unlock"></i> Quick Hash Crack
+                    </h5>
+                    <form id="quickHashForm">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="quickHash"
+                                   placeholder="Enter hash value" required>
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-key"></i> Crack
+                            </button>
+                        </div>
+                    </form>
+                    <div id="hashResult" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history"></i> Recent Activity
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">No recent activity. Start using the tools above to see your activity here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Quick IP Lookup
+    $('#quickIPForm').on('submit', function(e) {
+        e.preventDefault();
+        const ip = $('#quickIP').val();
+
+        showLoading();
+        $.ajax({
+            url: '/api/analyze-ip',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ ip: ip }),
+            success: function(result) {
+                hideLoading();
+                const geo = result.geolocation;
+                const html = `
+                    <div class="alert alert-info">
+                        <strong>Location:</strong> ${geo.city}, ${geo.country}<br>
+                        <strong>Coordinates:</strong> ${geo.latitude}, ${geo.longitude}<br>
+                        <strong>Reputation:</strong> ${result.reputation_score}/100<br>
+                        <strong>Risk Level:</strong> <span class="badge bg-${getRiskColor(result.risk_level)}">${result.risk_level}</span>
+                    </div>
+                `;
+                $('#ipResult').html(html);
+                showToast('IP analysis complete!');
+            },
+            error: function(xhr) {
+                hideLoading();
+                showToast('Error analyzing IP', 'danger');
+            }
+        });
+    });
+
+    // Quick Hash Crack
+    $('#quickHashForm').on('submit', function(e) {
+        e.preventDefault();
+        const hash = $('#quickHash').val();
+
+        showLoading();
+        $.ajax({
+            url: '/api/hash-crack',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ hash: hash, algorithm: 'md5', method: 'smart' }),
+            success: function(result) {
+                hideLoading();
+                if (result.success) {
+                    const html = `
+                        <div class="alert alert-success">
+                            <strong>✓ Cracked!</strong><br>
+                            <strong>Password:</strong> <code>${result.password}</code><br>
+                            <strong>Strength:</strong> ${result.strength}<br>
+                            <strong>Entropy:</strong> ${result.entropy} bits
+                        </div>
+                    `;
+                    $('#hashResult').html(html);
+                    showToast('Hash cracked successfully!');
+                } else {
+                    $('#hashResult').html('<div class="alert alert-warning">Failed to crack hash</div>');
+                    showToast('Could not crack hash', 'danger');
+                }
+            },
+            error: function(xhr) {
+                hideLoading();
+                showToast('Error cracking hash', 'danger');
+            }
+        });
+    });
+
+    function getRiskColor(level) {
+        const colors = {
+            'LOW': 'success',
+            'MEDIUM': 'warning',
+            'HIGH': 'danger',
+            'CRITICAL': 'danger'
+        };
+        return colors[level] || 'secondary';
+    }
+</script>
+{% endblock %}

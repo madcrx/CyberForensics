@@ -24,10 +24,38 @@ services:
       - TZ=UTC
     command: /bin/bash
 
-  # Optional: Web interface for reports
+  # Web Portal - Professional Browser Interface
+  web_portal:
+    build: .
+    image: cyberforensics:latest
+    container_name: cyberforensics_web_portal
+    hostname: forensics-web
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/data
+      - ./tools:/app/tools
+      - ./web:/app/web
+      - evidence_data:/data/evidence
+      - reports_data:/data/reports
+    networks:
+      - forensics_net
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    environment:
+      - PYTHONUNBUFFERED=1
+      - FLASK_APP=web/app.py
+      - FLASK_ENV=development
+      - TZ=UTC
+    command: python web/app.py
+    depends_on:
+      - forensics
+
+  # Static File Server for Reports
   web_interface:
     image: nginx:alpine
-    container_name: forensics_web
+    container_name: forensics_reports
     ports:
       - "8080:80"
     volumes:
