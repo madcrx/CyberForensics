@@ -6,7 +6,7 @@ Analyzes network paths and creates hop-by-hop geographic visualizations.
 import subprocess
 import re
 import json
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 from datetime import datetime
 import logging
 
@@ -45,45 +45,86 @@ class TracerouteAnalyzer:
 
         analyzed_hops = []
         for hop_num, hop_data in enumerate(hops, 1):
-            if hop_data['ip']:
+            # Safely get IP address
+            ip_addr = hop_data.get('ip') if isinstance(hop_data, dict) else None
+
+            if ip_addr:
                 try:
-                    analysis = ip_intel.analyze_ip(hop_data['ip'])
+                    analysis = ip_intel.analyze_ip(ip_addr)
 
                     # Skip if analysis returned an error
-                    if 'error' in analysis:
-                        logger.warning(f"Skipping hop {hop_num} due to analysis error: {analysis['error']}")
+                    if not analysis or 'error' in analysis:
+                        error_msg = analysis.get('error', 'Unknown error') if analysis else 'No analysis data'
+                        logger.warning(f"Skipping hop {hop_num} ({ip_addr}) due to analysis error: {error_msg}")
                         continue
 
-                    geolocation = analysis.get('geolocation', {})
+                    # Safely extract geolocation with defaults
+                    geolocation = analysis.get('geolocation', {}) if isinstance(analysis.get('geolocation'), dict) else {}
+                    isp_info = analysis.get('isp_info', {}) if isinstance(analysis.get('isp_info'), dict) else {}
+
+                    # Ensure all geolocation fields are JSON-serializable
+                    safe_geolocation = {
+                        'country': str(geolocation.get('country', 'Unknown')) if geolocation.get('country') else 'Unknown',
+                        'country_code': str(geolocation.get('country_code', 'XX')) if geolocation.get('country_code') else 'XX',
+                        'region': str(geolocation.get('region', 'Unknown')) if geolocation.get('region') else 'Unknown',
+                        'city': str(geolocation.get('city', 'Unknown')) if geolocation.get('city') else 'Unknown',
+                        'latitude': float(geolocation.get('latitude', 0.0)) if geolocation.get('latitude') is not None else 0.0,
+                        'longitude': float(geolocation.get('longitude', 0.0)) if geolocation.get('longitude') is not None else 0.0,
+                        'timezone': str(geolocation.get('timezone', 'UTC')) if geolocation.get('timezone') else 'UTC',
+                        'organization': str(geolocation.get('organization', 'Unknown')) if geolocation.get('organization') else 'Unknown',
+                    }
+
+                    # Ensure ISP info is JSON-serializable
+                    safe_isp_info = {
+                        'asn': str(isp_info.get('asn', 'Unknown')) if isp_info.get('asn') else 'Unknown',
+                        'isp_name': str(isp_info.get('isp_name', 'Unknown')) if isp_info.get('isp_name') else 'Unknown',
+                        'organization': str(isp_info.get('organization', 'Unknown')) if isp_info.get('organization') else 'Unknown',
+                        'network_type': str(isp_info.get('network_type', 'Unknown')) if isp_info.get('network_type') else 'Unknown',
+                    }
+
+                    # Safely get RTT
+                    rtt_value = hop_data.get('rtt')
+                    safe_rtt = float(rtt_value) if rtt_value is not None and str(rtt_value).replace('.', '').isdigit() else None
 
                     analyzed_hop = {
-                        'hop_number': hop_num,
-                        'ip_address': hop_data['ip'],
-                        'hostname': hop_data.get('hostname'),
-                        'rtt': hop_data.get('rtt'),  # Round-trip time
-                        'geolocation': geolocation,
-                        'isp_info': analysis.get('isp_info', {}),
+                        'hop_number': int(hop_num),
+                        'ip_address': str(ip_addr),
+                        'hostname': str(hop_data.get('hostname')) if hop_data.get('hostname') else None,
+                        'rtt': safe_rtt,
+                        'geolocation': safe_geolocation,
+                        'isp_info': safe_isp_info,
                         'coordinates': {
-                            'latitude': geolocation.get('latitude', 0),
-                            'longitude': geolocation.get('longitude', 0),
+                            'latitude': safe_geolocation['latitude'],
+                            'longitude': safe_geolocation['longitude'],
                         }
                     }
 
                     analyzed_hops.append(analyzed_hop)
-                    self.hop_database[hop_data['ip']] = analyzed_hop
+                    self.hop_database[ip_addr] = analyzed_hop
+
                 except Exception as e:
-                    logger.error(f"Error analyzing hop {hop_num} ({hop_data['ip']}): {e}")
+                    logger.error(f"Error analyzing hop {hop_num} ({ip_addr}): {e}")
+                    import traceback
+                    logger.error(traceback.format_exc())
                     continue
+            else:
+                logger.warning(f"Hop {hop_num} has no IP address, skipping")
+
+        # Ensure we have valid data
+        if not analyzed_hops:
+            logger.warning(f"No valid hops found for destination {destination}")
 
         route_info = {
-            'destination': destination,
+            'destination': str(destination),
             'timestamp': datetime.now().isoformat(),
             'total_hops': len(analyzed_hops),
             'hops': analyzed_hops,
         }
 
         self.routes.append(route_info)
-        return analyzed_hops
+
+        # Always return a list, even if empty
+        return analyzed_hops if analyzed_hops else []
 
     def _execute_traceroute(self, destination: str, max_hops: int) -> List[Dict]:
         """

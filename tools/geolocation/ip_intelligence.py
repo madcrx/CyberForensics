@@ -123,6 +123,40 @@ class IPIntelligence:
             'known_scanners': set(),
         }
 
+    def _get_default_geolocation(self) -> Dict:
+        """Return default geolocation data when lookup fails"""
+        return {
+            'country': 'Unknown',
+            'country_code': 'XX',
+            'region': 'Unknown',
+            'city': 'Unknown',
+            'latitude': 0.0,
+            'longitude': 0.0,
+            'timezone': 'UTC',
+            'organization': 'Unknown',
+        }
+
+    def _get_default_isp_info(self) -> Dict:
+        """Return default ISP info when lookup fails"""
+        return {
+            'asn': 'Unknown',
+            'isp_name': 'Unknown',
+            'organization': 'Unknown',
+            'network_type': 'Unknown',
+        }
+
+    def _get_default_threat_intel(self) -> Dict:
+        """Return default threat intelligence when check fails"""
+        return {
+            'is_malicious': False,
+            'is_tor_exit': False,
+            'is_proxy': False,
+            'is_vpn': False,
+            'is_scanner': False,
+            'blacklists': [],
+            'threat_categories': [],
+        }
+
     def analyze_ip(self, ip_address: str) -> Dict:
         """
         Comprehensive IP address analysis.
@@ -135,27 +169,72 @@ class IPIntelligence:
         """
         logger.info(f"Analyzing IP: {ip_address}")
 
+        # Validate input
+        if not ip_address or not isinstance(ip_address, str):
+            logger.error(f"Invalid IP address input: {ip_address}")
+            return {'error': f'Invalid IP address: {ip_address}'}
+
         try:
-            ip_obj = ipaddress.ip_address(ip_address)
+            ip_obj = ipaddress.ip_address(ip_address.strip())
+
+            # Get sub-analyses with error handling
+            reverse_dns = None
+            geolocation = {}
+            isp_info = {}
+            threat_intelligence = {}
+
+            try:
+                reverse_dns = self._reverse_dns_lookup(ip_address)
+            except Exception as e:
+                logger.warning(f"Reverse DNS lookup failed: {e}")
+
+            try:
+                geolocation = self._geolocate_ip(ip_address)
+                if not isinstance(geolocation, dict):
+                    geolocation = {}
+            except Exception as e:
+                logger.error(f"Geolocation failed: {e}")
+                geolocation = self._get_default_geolocation()
+
+            try:
+                isp_info = self._get_isp_info(ip_address)
+                if not isinstance(isp_info, dict):
+                    isp_info = {}
+            except Exception as e:
+                logger.warning(f"ISP info lookup failed: {e}")
+                isp_info = self._get_default_isp_info()
+
+            try:
+                threat_intelligence = self._check_threat_intel(ip_address)
+                if not isinstance(threat_intelligence, dict):
+                    threat_intelligence = {}
+            except Exception as e:
+                logger.warning(f"Threat intelligence check failed: {e}")
+                threat_intelligence = self._get_default_threat_intel()
 
             analysis = {
-                'ip_address': ip_address,
-                'ip_version': ip_obj.version,
-                'is_private': ip_obj.is_private,
-                'is_loopback': ip_obj.is_loopback,
-                'is_multicast': ip_obj.is_multicast,
-                'is_reserved': ip_obj.is_reserved,
-                'reverse_dns': self._reverse_dns_lookup(ip_address),
-                'geolocation': self._geolocate_ip(ip_address),
-                'isp_info': self._get_isp_info(ip_address),
-                'threat_intelligence': self._check_threat_intel(ip_address),
+                'ip_address': str(ip_address),
+                'ip_version': int(ip_obj.version),
+                'is_private': bool(ip_obj.is_private),
+                'is_loopback': bool(ip_obj.is_loopback),
+                'is_multicast': bool(ip_obj.is_multicast),
+                'is_reserved': bool(ip_obj.is_reserved),
+                'reverse_dns': reverse_dns,
+                'geolocation': geolocation,
+                'isp_info': isp_info,
+                'threat_intelligence': threat_intelligence,
                 'reputation_score': 0,
                 'risk_level': 'UNKNOWN',
             }
 
             # Calculate reputation score
-            analysis['reputation_score'] = self._calculate_reputation(analysis)
-            analysis['risk_level'] = self._assess_risk_level(analysis['reputation_score'])
+            try:
+                analysis['reputation_score'] = self._calculate_reputation(analysis)
+                analysis['risk_level'] = self._assess_risk_level(analysis['reputation_score'])
+            except Exception as e:
+                logger.warning(f"Reputation calculation failed: {e}")
+                analysis['reputation_score'] = 50
+                analysis['risk_level'] = 'UNKNOWN'
 
             self.analyzed_ips[ip_address] = analysis
             return analysis
@@ -163,6 +242,11 @@ class IPIntelligence:
         except ValueError as e:
             logger.error(f"Invalid IP address: {e}")
             return {'error': f'Invalid IP address: {ip_address}'}
+        except Exception as e:
+            logger.error(f"Unexpected error analyzing IP {ip_address}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return {'error': f'Analysis failed: {str(e)}'}
 
     def _reverse_dns_lookup(self, ip_address: str) -> Optional[str]:
         """Perform reverse DNS lookup"""
