@@ -65,6 +65,43 @@
         </div>
     </div>
 
+    <!-- Quick Access Buttons -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <a href="/reports" class="text-decoration-none">
+                <div class="card quick-action-card border-primary">
+                    <div class="card-body text-center">
+                        <i class="fas fa-file-alt fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">View Reports</h5>
+                        <p class="card-text text-muted mb-0">Access all generated forensic reports</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4 mb-3">
+            <a href="http://localhost:8080/reports" target="_blank" class="text-decoration-none">
+                <div class="card quick-action-card border-info">
+                    <div class="card-body text-center">
+                        <i class="fas fa-download fa-3x text-info mb-3"></i>
+                        <h5 class="card-title">Download Reports</h5>
+                        <p class="card-text text-muted mb-0">Direct access to report files (Port 8080)</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4 mb-3">
+            <a href="/api/status" target="_blank" class="text-decoration-none">
+                <div class="card quick-action-card border-success">
+                    <div class="card-body text-center">
+                        <i class="fas fa-heartbeat fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">System Status</h5>
+                        <p class="card-text text-muted mb-0">Check API health and availability</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
     <!-- Tools Grid -->
     <div class="row mb-4">
         <div class="col-12">
@@ -271,6 +308,33 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quick-action-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+        height: 100%;
+    }
+
+    .quick-action-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .quick-action-card .card-body {
+        padding: 2rem;
+    }
+
+    .quick-action-card i {
+        transition: all 0.3s ease;
+    }
+
+    .quick-action-card:hover i {
+        transform: scale(1.1);
+    }
+</style>
 {% endblock %}
 
 {% block extra_js %}
