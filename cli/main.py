@@ -23,6 +23,10 @@ from tools.password_recovery.password_analyzer import PasswordAnalyzer
 from tools.social_media_osint.profile_analyzer import ProfileAnalyzer
 from tools.social_media_osint.activity_tracker import ActivityTracker
 from tools.user_attribution.attribution_engine import AttributionEngine
+from tools.geolocation.ip_intelligence import IPIntelligence
+from tools.geolocation.traceroute_analyzer import TracerouteAnalyzer
+from tools.geolocation.map_generator import InteractiveMapGenerator
+from tools.email_forensics.email_intelligence import EmailIntelligence
 
 import logging
 
@@ -231,6 +235,108 @@ def attribution_command(args):
     print(f"  Report saved to: {args.output}")
 
 
+def geolocation_command(args):
+    """Handle geolocation commands"""
+    if args.action == 'ip-analysis':
+        intel = IPIntelligence()
+
+        if args.ip:
+            result = intel.analyze_ip(args.ip)
+            print(f"\n📍 IP Intelligence for {args.ip}")
+            print(f"  Location: {result['geolocation']['city']}, {result['geolocation']['country']}")
+            print(f"  Coordinates: {result['geolocation']['latitude']}, {result['geolocation']['longitude']}")
+            print(f"  Reputation: {result['reputation_score']}/100")
+            print(f"  Risk Level: {result['risk_level']}")
+
+        elif args.ip_list:
+            with open(args.ip_list, 'r') as f:
+                ips = [line.strip() for line in f if line.strip()]
+            intel.batch_analyze(ips)
+
+        intel.generate_report(args.output, args.format)
+        print(f"\n✓ IP intelligence report saved to: {args.output}")
+
+    elif args.action == 'traceroute':
+        analyzer = TracerouteAnalyzer()
+        print(f"\n🌐 Tracing route to {args.destination}")
+        hops = analyzer.trace_route(args.destination, args.max_hops)
+
+        analysis = analyzer.analyze_route_path(hops)
+        print(f"\n✓ Trace complete: {len(hops)} hops")
+        print(f"  Countries: {analysis.get('num_countries')}")
+        print(f"  Total Distance: {analysis.get('total_distance_km'):.0f} km")
+
+        anomalies = analyzer.detect_route_anomalies(hops)
+        if anomalies:
+            print(f"  ⚠️ Anomalies: {len(anomalies)}")
+
+        analyzer.generate_report(args.output)
+        print(f"\n✓ Traceroute report saved to: {args.output}")
+
+        # Generate interactive map if requested
+        if args.generate_map:
+            generator = InteractiveMapGenerator()
+            generator.add_traceroute_path(hops, args.destination)
+            map_output = args.output.replace('.txt', '.html')
+            generator.generate_map(map_output, f"Route to {args.destination}")
+            print(f"✓ Interactive map saved to: {map_output}")
+
+    elif args.action == 'generate-map':
+        import json
+
+        with open(args.data, 'r') as f:
+            data = json.load(f)
+
+        generator = InteractiveMapGenerator()
+
+        # Add IP markers
+        for ip_data in data.get('ips', []):
+            generator.add_ip_marker(ip_data)
+
+        # Add routes
+        for route in data.get('routes', []):
+            generator.add_traceroute_path(route.get('hops', []), route.get('destination'))
+
+        generator.generate_map(args.output, args.title or "IP Geolocation Map")
+        print(f"\n✓ Interactive map generated: {args.output}")
+        print(f"  Open in browser to view visualization")
+
+
+def email_forensics_command(args):
+    """Handle email forensics commands"""
+    intel = EmailIntelligence()
+
+    print(f"\n📧 Analyzing email: {args.email}")
+    analysis = intel.analyze_email_file(args.email)
+
+    sender = analysis['sender_info']
+    print(f"  From: {sender['from_address']}")
+    print(f"  Risk Score: {analysis['risk_score']}/100")
+    print(f"  Authentication: {'PASS' if analysis['authentication']['is_authenticated'] else 'FAIL'}")
+
+    if analysis['suspicious_indicators']:
+        print(f"  ⚠️ Suspicious Indicators: {len(analysis['suspicious_indicators'])}")
+
+    if args.trace:
+        print(f"\n🌍 Tracing sender location...")
+        geolocated_hops = intel.trace_sender_geolocation(analysis)
+
+        for hop in geolocated_hops:
+            geo = hop.get('geolocation', {})
+            print(f"  Hop {hop['hop_number']}: {geo.get('city')}, {geo.get('country')} [{hop.get('from_ip')}]")
+
+        # Generate map if requested
+        if args.generate_map:
+            generator = InteractiveMapGenerator()
+            generator.add_traceroute_path(geolocated_hops, sender['from_address'])
+            map_output = args.output.replace('.txt', '.html')
+            generator.generate_map(map_output, f"Email Route from {sender['from_address']}")
+            print(f"✓ Email route map saved to: {map_output}")
+
+    intel.generate_report(args.output)
+    print(f"\n✓ Email forensics report saved to: {args.output}")
+
+
 def main():
     """Main CLI entry point"""
     parser = argparse.ArgumentParser(
@@ -304,6 +410,26 @@ def main():
     attrib_parser.add_argument('--output', required=True, help='Attribution report output')
     attrib_parser.add_argument('--le-export', help='Law enforcement export file')
 
+    # Geolocation
+    geo_parser = subparsers.add_parser('geolocation', help='IP geolocation and tracking')
+    geo_parser.add_argument('action', choices=['ip-analysis', 'traceroute', 'generate-map'], help='Action')
+    geo_parser.add_argument('--ip', help='Single IP to analyze')
+    geo_parser.add_argument('--ip-list', help='File with list of IPs')
+    geo_parser.add_argument('--destination', help='Traceroute destination')
+    geo_parser.add_argument('--max-hops', type=int, default=30, help='Max traceroute hops')
+    geo_parser.add_argument('--data', help='JSON data file for map generation')
+    geo_parser.add_argument('--title', help='Map title')
+    geo_parser.add_argument('--generate-map', action='store_true', help='Generate interactive map')
+    geo_parser.add_argument('--output', required=True, help='Output file')
+    geo_parser.add_argument('--format', choices=['json', 'text'], default='text', help='Report format')
+
+    # Email Forensics
+    email_parser = subparsers.add_parser('email-forensics', help='Email analysis and tracking')
+    email_parser.add_argument('--email', required=True, help='Email file (.eml)')
+    email_parser.add_argument('--trace', action='store_true', help='Trace sender geolocation')
+    email_parser.add_argument('--generate-map', action='store_true', help='Generate route map')
+    email_parser.add_argument('--output', required=True, help='Output report path')
+
     args = parser.parse_args()
 
     if not args.module:
@@ -329,6 +455,10 @@ def main():
             osint_command(args)
         elif args.module == 'attribution':
             attribution_command(args)
+        elif args.module == 'geolocation':
+            geolocation_command(args)
+        elif args.module == 'email-forensics':
+            email_forensics_command(args)
 
     except Exception as e:
         logger.error(f"Error executing command: {e}", exc_info=True)

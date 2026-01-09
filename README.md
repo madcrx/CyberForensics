@@ -29,6 +29,20 @@ A comprehensive Digital Forensics and Cybersecurity Investigation Suite for anal
 - **Activity Tracker**: Monitor and analyze user activities across platforms
 - **Network Mapping**: Visualize social network connections
 
+### 6. IP Geolocation & Tracking 🆕
+- **IP Intelligence**: Geolocate IP addresses with precise coordinates, ISP identification, and reputation scoring
+- **Traceroute Analyzer**: Hop-by-hop network path analysis with complete geolocation
+- **Interactive World Map**: Beautiful, zoomable map visualization showing traveled paths
+- **Route Visualization**: Visual tracking from hop to hop with detailed information at each location
+- **Geographic Analysis**: Compare locations, calculate distances, detect anomalies
+
+### 7. Email Forensics 🆕
+- **Email Intelligence**: Deep analysis of email headers, authentication (SPF/DKIM/DMARC), attachments
+- **Sender Geolocation**: Trace email path through mail servers with geographic coordinates
+- **Interactive Route Maps**: Visualize complete email journey on interactive world map
+- **Spoofing Detection**: Advanced detection of sender spoofing and phishing attempts
+- **Path Analysis**: Identify suspicious mail server routes and anomalies
+
 ## 🚀 Quick Start with Docker
 
 ### Prerequisites
@@ -84,6 +98,24 @@ docker-compose exec forensics python cli/main.py hash-crack --hash "5f4dcc3b5aa7
 ### Social Media OSINT
 ```bash
 docker-compose exec forensics python cli/main.py osint-gather --username "target_user" --platform twitter --output /data/osint_report.json
+```
+
+### IP Geolocation & Tracking
+```bash
+# Analyze IP with geolocation
+docker-compose exec forensics python cli/main.py geolocation ip-analysis --ip 8.8.8.8 --output /data/ip_report.html
+
+# Traceroute with interactive map
+docker-compose exec forensics python cli/main.py geolocation traceroute --destination example.com --generate-map --output /data/route_report.txt
+
+# Generate interactive world map
+docker-compose exec forensics python cli/main.py geolocation generate-map --data /data/geo_data.json --output /data/world_map.html
+```
+
+### Email Forensics
+```bash
+# Analyze email with sender tracking
+docker-compose exec forensics python cli/main.py email-forensics --email /data/suspicious.eml --trace --generate-map --output /data/email_report.txt
 ```
 
 ## 🔒 Legal Notice
